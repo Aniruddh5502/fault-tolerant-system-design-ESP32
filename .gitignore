@@ -25,5 +25,3 @@ env/
 .DS_Store
 Thumbs.db
 
-# Generated firmware folders (if you create them at build time)
-firmware_0*/
