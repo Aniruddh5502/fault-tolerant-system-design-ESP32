@@ -1,0 +1,29 @@
+# Build artifacts
+*/build/
+*/.arduino/
+*.bin
+*.elf
+*.hex
+*.d
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS garbage
+.DS_Store
+Thumbs.db
+
+# Generated firmware folders (if you create them at build time)
+firmware_0*/
