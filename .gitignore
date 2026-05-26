@@ -20,6 +20,12 @@ env/
 .idea/
 *.swp
 *.swo
+*.o
+*.cpp
+*.merged
+*.map
+*.a
+*.h
 
 # OS garbage
 .DS_Store
