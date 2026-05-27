@@ -2,7 +2,7 @@
 
 *A robust embedded firmware system for ESP32 that implements **three-way OTA partition management** with automatic corruption detection, self-repair, and **two-layer Triple Modular Redundancy (TMR)** for critical data and arithmetic operations.*
 
-*This project demonstrates an industrial-grade approach to firmware resilience on ESP32. It uses three OTA partitions (`ota_0`, `ota_1`, `ota_2`) with runtime health monitoring. If any partition becomes corrupted (e.g., by bit flips, incomplete writes, or fault injection), the system automatically repairs it by copying from a known-good partition. Additionally, the firmware implements software-based TMR for sensor data and arithmetic operations to tolerate single-bit errors or soft faults in memory.*
+*This project demonstrates an attempt to industrial-grade approach to firmware resilience on ESP32. It uses three OTA partitions (`ota_0`, `ota_1`, `ota_2`) with runtime health monitoring. If any partition becomes corrupted (e.g., by bit flips, incomplete writes, or fault injection), the system automatically repairs it by copying from a known-good partition. Additionally, the firmware implements software-based TMR for sensor data and arithmetic operations to tolerate single-bit errors or soft faults in memory.*
 
 The system is designed for:
 

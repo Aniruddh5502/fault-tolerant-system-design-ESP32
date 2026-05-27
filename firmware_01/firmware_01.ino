@@ -457,29 +457,6 @@ public:
         return twoStageTMR(res);
     }
 
-    // Alternative: Using inline assembly for guaranteed independence
-    // (ESP32 Xtensa assembly - more robust against optimization) [NOT TESTED]
-/*
-    static float add_asm(float a, float b) {
-        float res[3][3];
-        
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                float result;
-                // Xtensa inline assembly - forces independent calculation
-                __asm__ volatile (
-                    "add.s %0, %1, %2\n"
-                    : "=f" (result)
-                    : "f" (a), "f" (b)
-                    : "memory"
-                );
-                res[i][j] = result;
-            }
-        }
-        
-        return twoStageTMR(res);
-    }
-*/
 private:
     // Two‑stage TMR voter
     static float twoStageTMR(float copies[3][3]) {
