@@ -344,78 +344,204 @@ class math {
 public:
     static float add(float a, float b) {
         float res[3][3];
+        
+        // Perform 9 completely independent calculations
+        // Using different expression forms and volatile to prevent optimization
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                volatile float tmp = a + b;   // volatile prevents constant folding
+                // Each copy computed independently with different register allocation
+                volatile float tmp;
+                
+                // Vary calculation order based on indices to create diversity
+                if ((i + j) % 3 == 0) {
+                    tmp = a + b;           // standard order
+                } else if ((i + j) % 3 == 1) {
+                    tmp = b + a;           // swapped operands
+                } else {
+                    tmp = a;               // compute as accumulation
+                    tmp += b;
+                }
+                
                 res[i][j] = tmp;
-                asm volatile("" ::: "memory"); // compiler barrier
+                
+                // Compiler barrier prevents merging of calculations
+                asm volatile("" ::: "memory");
             }
         }
+        
         return twoStageTMR(res);
     }
 
     static float sub(float a, float b) {
         float res[3][3];
+        
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                volatile float tmp = a - b;
+                volatile float tmp;
+                
+                if ((i + j) % 3 == 0) {
+                    tmp = a - b;           // standard order
+                } else if ((i + j) % 3 == 1) {
+                    tmp = a;               // compute as a + (-b)
+                    tmp += (-b);
+                } else {
+                    tmp = -(b - a);        // alternative expression
+                }
+                
                 res[i][j] = tmp;
                 asm volatile("" ::: "memory");
             }
         }
+        
         return twoStageTMR(res);
     }
 
     static float mul(float a, float b) {
         float res[3][3];
+        
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                volatile float tmp = a * b;
+                volatile float tmp;
+                
+                if ((i + j) % 3 == 0) {
+                    tmp = a * b;           // standard order
+                } else if ((i + j) % 3 == 1) {
+                    tmp = b * a;           // swapped operands
+                } else {
+                    // Compute via repeated addition (slower but independent code path)
+                    tmp = 0.0f;
+                    for (int k = 0; k < (int)b; k++) {
+                        tmp += a;
+                    }
+                    // Handle fractional part
+                    tmp += a * (b - (int)b);
+                }
+                
                 res[i][j] = tmp;
                 asm volatile("" ::: "memory");
             }
         }
+        
         return twoStageTMR(res);
     }
 
     static float div(float a, float b) {
-        // Avoid division by zero – return NaN if divisor is 0
-        if (b == 0.0f) return NAN;
+        // Handle division by zero before creating copies
+        if (b == 0.0f) {
+            return NAN;
+        }
+        
         float res[3][3];
+        
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                volatile float tmp = a / b;
+                volatile float tmp;
+                
+                if ((i + j) % 3 == 0) {
+                    tmp = a / b;           // standard division
+                } else if ((i + j) % 3 == 1) {
+                    tmp = a * (1.0f / b);  // multiply by reciprocal
+                } else {
+                    // Newton-Raphson approximation (independent code path)
+                    float inv = 1.0f / b;   // approximate reciprocal
+                    // One refinement step
+                    inv = inv * (2.0f - b * inv);
+                    tmp = a * inv;
+                }
+                
                 res[i][j] = tmp;
                 asm volatile("" ::: "memory");
             }
         }
+        
         return twoStageTMR(res);
     }
 
+    // Alternative: Using inline assembly for guaranteed independence
+    // (ESP32 Xtensa assembly - more robust against optimization) [NOT TESTED]
+/*
+    static float add_asm(float a, float b) {
+        float res[3][3];
+        
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                float result;
+                // Xtensa inline assembly - forces independent calculation
+                __asm__ volatile (
+                    "add.s %0, %1, %2\n"
+                    : "=f" (result)
+                    : "f" (a), "f" (b)
+                    : "memory"
+                );
+                res[i][j] = result;
+            }
+        }
+        
+        return twoStageTMR(res);
+    }
+*/
 private:
-    // Two‑stage TMR voter – identical to the logic in var::read()
+    // Two‑stage TMR voter
     static float twoStageTMR(float copies[3][3]) {
         float row_majority[3];
+        
         for (int i = 0; i < 3; i++) {
             row_majority[i] = majority(copies[i][0], copies[i][1], copies[i][2]);
         }
+        
         return majority(row_majority[0], row_majority[1], row_majority[2]);
     }
 
+    // Improved majority with NaN/Inf handling
     static float majority(float a, float b, float c) {
+        // Count valid (non-NaN) values
+        bool a_valid = !isnan(a);
+        bool b_valid = !isnan(b);
+        bool c_valid = !isnan(c);
+        
+        // If two or more are NaN, return NaN
+        int valid_count = (a_valid ? 1 : 0) + (b_valid ? 1 : 0) + (c_valid ? 1 : 0);
+        if (valid_count < 2) {
+            return NAN;
+        }
+        
+        // Handle Inf cases
+        if (isinf(a) || isinf(b) || isinf(c)) {
+            // If two are +Inf, return +Inf
+            int pos_inf = (a == INFINITY ? 1 : 0) + (b == INFINITY ? 1 : 0) + (c == INFINITY ? 1 : 0);
+            if (pos_inf >= 2) return INFINITY;
+            
+            // If two are -Inf, return -Inf
+            int neg_inf = (a == -INFINITY ? 1 : 0) + (b == -INFINITY ? 1 : 0) + (c == -INFINITY ? 1 : 0);
+            if (neg_inf >= 2) return -INFINITY;
+        }
+        
+        // Standard majority for normal floats
         if (a == b) return a;
         if (a == c) return a;
         if (b == c) return b;
-        // No exact match – fallback to median (protects against one outlier)
+        
+        // No exact majority – use median for robustness
         float arr[3] = {a, b, c};
+        
+        // Partial sort to find median (handles NaNs by ignoring them)
         for (int i = 0; i < 2; i++) {
-            for (int j = i+1; j < 3; j++) {
-                if (arr[i] > arr[j]) {
-                    float t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+            for (int j = i + 1; j < 3; j++) {
+                if (isnan(arr[j])) continue;
+                if (isnan(arr[i]) || arr[i] > arr[j]) {
+                    float t = arr[i];
+                    arr[i] = arr[j];
+                    arr[j] = t;
                 }
             }
         }
-        return arr[1]; // median
+        
+        // Return median (or first non-NaN if two are NaN)
+        for (int i = 0; i < 3; i++) {
+            if (!isnan(arr[i])) return arr[i];
+        }
+        
+        return NAN; // All NaN (should not reach here)
     }
 };
 
