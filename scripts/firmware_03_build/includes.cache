@@ -7,8 +7,8 @@
   },
   {
     "compile": {
-      "source_path": "C:\\Users\\Administrator\\Desktop\\code\\momobot\\WORKSPACE\\output\\fault-tolerant-system-design\\test_2\\scripts\\firmware_03_build\\sketch\\firmware_03.ino.cpp.merged",
-      "depfile_path": "C:\\Users\\Administrator\\Desktop\\code\\momobot\\WORKSPACE\\output\\fault-tolerant-system-design\\test_2\\scripts\\firmware_03_build\\sketch\\firmware_03.ino.cpp.merged.libsdetect.d"
+      "source_path": "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\scripts\\firmware_03_build\\sketch\\firmware_03.ino.cpp.merged",
+      "depfile_path": "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\scripts\\firmware_03_build\\sketch\\firmware_03.ino.cpp.merged.libsdetect.d"
     },
     "compile_task": {
       "args": [
@@ -38,21 +38,21 @@
         "-DARDUINO_EVENT_RUNNING_CORE=1",
         "-DARDUINO_USB_CDC_ON_BOOT=0",
         "@C:\\Users\\Administrator\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esp32-libs\\3.3.8/flags/defines",
-        "-IC:\\Users\\Administrator\\Desktop\\code\\momobot\\WORKSPACE\\output\\fault-tolerant-system-design\\test_2\\firmware_03",
+        "-IC:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_03",
         "-iprefix",
         "C:\\Users\\Administrator\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esp32-libs\\3.3.8/include/",
         "@C:\\Users\\Administrator\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esp32-libs\\3.3.8/flags/includes",
         "-IC:\\Users\\Administrator\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esp32-libs\\3.3.8/qio_qspi/include",
         "-IC:\\Users\\Administrator\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.8\\cores\\esp32",
         "-IC:\\Users\\Administrator\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.8\\variants\\esp32",
-        "@C:\\Users\\Administrator\\Desktop\\code\\momobot\\WORKSPACE\\output\\fault-tolerant-system-design\\test_2\\scripts\\firmware_03_build/build_opt.h",
-        "@C:\\Users\\Administrator\\Desktop\\code\\momobot\\WORKSPACE\\output\\fault-tolerant-system-design\\test_2\\scripts\\firmware_03_build/file_opts",
-        "C:\\Users\\Administrator\\Desktop\\code\\momobot\\WORKSPACE\\output\\fault-tolerant-system-design\\test_2\\scripts\\firmware_03_build\\sketch\\firmware_03.ino.cpp.merged",
+        "@C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\scripts\\firmware_03_build/build_opt.h",
+        "@C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\scripts\\firmware_03_build/file_opts",
+        "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\scripts\\firmware_03_build\\sketch\\firmware_03.ino.cpp.merged",
         "-o",
         "nul",
         "-MMD",
         "-MF",
-        "C:\\Users\\Administrator\\Desktop\\code\\momobot\\WORKSPACE\\output\\fault-tolerant-system-design\\test_2\\scripts\\firmware_03_build\\sketch\\firmware_03.ino.cpp.merged.libsdetect.d"
+        "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\scripts\\firmware_03_build\\sketch\\firmware_03.ino.cpp.merged.libsdetect.d"
       ]
     }
   },

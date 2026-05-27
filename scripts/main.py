@@ -42,10 +42,10 @@ def clear_folder(folder_path, max_retries=3, delay=0.5):
 ## PATHS SETUP
 try:
     # Try to get script directory
-    ROOT = Path(__file__).parent
+    ROOT = Path(__file__).parent.parent
 except:
     # For Interactive Environments
-    ROOT = Path.cwd().parent
+    ROOT = Path.cwd().parent.parent
 
 # Build folders
 BUILD_01 = ROOT / "scripts" / "firmware_01_build"

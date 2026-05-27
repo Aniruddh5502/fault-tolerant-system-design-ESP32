@@ -11,9 +11,14 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.ipynb
 .Python
 venv/
 env/
+
+firmware_01_build/
+firmware_02_build/
+firmware_03_build/
 
 # IDE
 .vscode/

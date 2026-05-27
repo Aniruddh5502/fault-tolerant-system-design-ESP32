@@ -1,4 +1,4 @@
-#line 1 "C:\\Users\\Administrator\\Desktop\\code\\momobot\\WORKSPACE\\output\\fault-tolerant-system-design\\test_2\\firmware_02\\firmware_02.ino"
+#line 1 "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_02\\firmware_02.ino"
 #include <Arduino.h>
 #include "esp_ota_ops.h"
 #include "esp_partition.h"
@@ -7,14 +7,12 @@
 #include "freertos/task.h"
 #include "esp_task_wdt.h"
 
-#define TASK_PERIOD_MS      5000
-#define WATCHDOG_TIMEOUT_MS 30000
-// Chunk size for partition copy – 4KB is a good balance
-#define COPY_CHUNK_SIZE   4096
+#define TASK_PERIOD_MS      5000    //  Rechecking time gap for currpuption and repair in firmware
+#define WATCHDOG_TIMEOUT_MS 30000   //  Having margin over the max time the repair could take
+#define COPY_CHUNK_SIZE     4096    //  chunk sizes for partition copy and repair
 
 // task handles
 TaskHandle_t firmwareTaskHandle     =   NULL;
-TaskHandle_t faultInjectionHandle   =   NULL;
 TaskHandle_t basicOperationHandle   =   NULL;
 
 struct OtaSlot {
@@ -26,25 +24,23 @@ struct OtaSlot {
 // ------------------------------------------------------------------
 // 1. Scan all three OTA partitions using esp_partition_get_sha256()
 // ------------------------------------------------------------------
-#line 28 "C:\\Users\\Administrator\\Desktop\\code\\momobot\\WORKSPACE\\output\\fault-tolerant-system-design\\test_2\\firmware_02\\firmware_02.ino"
+#line 26 "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_02\\firmware_02.ino"
 bool scanAllOtaPartitions(OtaSlot slots[3]);
-#line 64 "C:\\Users\\Administrator\\Desktop\\code\\momobot\\WORKSPACE\\output\\fault-tolerant-system-design\\test_2\\firmware_02\\firmware_02.ino"
+#line 62 "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_02\\firmware_02.ino"
 bool repairPartition(const esp_partition_t* dst, const esp_partition_t* src);
-#line 144 "C:\\Users\\Administrator\\Desktop\\code\\momobot\\WORKSPACE\\output\\fault-tolerant-system-design\\test_2\\firmware_02\\firmware_02.ino"
+#line 142 "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_02\\firmware_02.ino"
 void repairAllInvalidPartitions(OtaSlot slots[3], const esp_partition_t* current);
-#line 178 "C:\\Users\\Administrator\\Desktop\\code\\momobot\\WORKSPACE\\output\\fault-tolerant-system-design\\test_2\\firmware_02\\firmware_02.ino"
+#line 176 "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_02\\firmware_02.ino"
 const esp_partition_t* getNextValidPartition(OtaSlot slots[3]);
-#line 217 "C:\\Users\\Administrator\\Desktop\\code\\momobot\\WORKSPACE\\output\\fault-tolerant-system-design\\test_2\\firmware_02\\firmware_02.ino"
+#line 215 "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_02\\firmware_02.ino"
 void firmwareTask(void* pvParameters);
-#line 294 "C:\\Users\\Administrator\\Desktop\\code\\momobot\\WORKSPACE\\output\\fault-tolerant-system-design\\test_2\\firmware_02\\firmware_02.ino"
-void faultInjectionTask(void* pvParameters);
-#line 496 "C:\\Users\\Administrator\\Desktop\\code\\momobot\\WORKSPACE\\output\\fault-tolerant-system-design\\test_2\\firmware_02\\firmware_02.ino"
+#line 428 "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_02\\firmware_02.ino"
 void baseOperation(void* pvParameters);
-#line 562 "C:\\Users\\Administrator\\Desktop\\code\\momobot\\WORKSPACE\\output\\fault-tolerant-system-design\\test_2\\firmware_02\\firmware_02.ino"
+#line 494 "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_02\\firmware_02.ino"
 void setup();
-#line 596 "C:\\Users\\Administrator\\Desktop\\code\\momobot\\WORKSPACE\\output\\fault-tolerant-system-design\\test_2\\firmware_02\\firmware_02.ino"
+#line 520 "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_02\\firmware_02.ino"
 void loop();
-#line 28 "C:\\Users\\Administrator\\Desktop\\code\\momobot\\WORKSPACE\\output\\fault-tolerant-system-design\\test_2\\firmware_02\\firmware_02.ino"
+#line 26 "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_02\\firmware_02.ino"
 bool scanAllOtaPartitions(OtaSlot slots[3]) {
     Serial.println("[INFO]       Scaning all partitions.");
     const esp_partition_subtype_t subtypes[3] = {
@@ -240,7 +236,7 @@ void firmwareTask(void* pvParameters) {
 
     Serial.println("\n\n");
     Serial.println("-----------------------------------------------------------------------------");
-    Serial.println(" Running Firmware Control Task: ");
+    Serial.println("                         Running Firmware Control Task:                      ");
     Serial.println("-----------------------------------------------------------------------------");
     Serial.println("\n\n");
     // --- Boot‑time health check and repair ---
@@ -293,6 +289,7 @@ void firmwareTask(void* pvParameters) {
             last_check = millis();
             scanAllOtaPartitions(slots);
             repairAllInvalidPartitions(slots, current);
+            
             // Note: we do not check current validity again because it would require
             // a runtime flash corruption of the executing image – extremely rare.
         }
@@ -300,79 +297,6 @@ void firmwareTask(void* pvParameters) {
 }
 
 
-
-// ------------------------------------------------------------------
-// FAULT INJECTION TEST
-// ------------------------------------------------------------------
-// Uncomment the line below to enable runtime fault injection
-#define TEST_MODE
-
-#ifdef TEST_MODE
-// Task that randomly corrupts a partition (including running, safely) and reboots if running
-
-
-void faultInjectionTask(void* pvParameters) {
-    // Get the current running partition once
-    const esp_partition_t* running = esp_ota_get_running_partition();
-    const esp_partition_subtype_t subtypes[3] = {
-        ESP_PARTITION_SUBTYPE_APP_OTA_0,
-        ESP_PARTITION_SUBTYPE_APP_OTA_1,
-        ESP_PARTITION_SUBTYPE_APP_OTA_2
-    };
-    const char* labels[3] = {"ota_0", "ota_1", "ota_2"};
-
-    while (true) {
-        vTaskDelay(pdMS_TO_TICKS(20000)); // every 20 seconds
-
-        // Pick a random OTA partition (0,1,2)
-        int target_idx = random(0, 3);
-        const esp_partition_t* target = esp_partition_find_first(ESP_PARTITION_TYPE_APP, subtypes[target_idx], NULL);
-        if (!target) {
-            Serial.println("[TEST]      Target partition not found!");
-            continue;
-        }
-
-        // Decide if we want to corrupt the running partition (50% chance for testing)
-        bool corrupt_running = (target == running) && (random(100) < 50);
-        if (target == running && !corrupt_running) {
-            Serial.printf("[TEST]       Skipping running partition %s\n", labels[target_idx]);
-            continue;
-        }
-
-        // Prepare garbage data
-        uint8_t garbage[16];
-        for (int i = 0; i < 16; i++) garbage[i] = random(0, 256);
-
-        esp_err_t err;
-        if (corrupt_running) {
-            // For running partition, write to the LAST sector (safe area)
-            size_t corrupt_offset = target->size - 16; // last 16 bytes
-            Serial.printf("[TEST]       Corrupting RUNNING partition %s at offset 0x%X (last sector)\n", labels[target_idx], corrupt_offset);
-            err = esp_partition_write(target, corrupt_offset, garbage, sizeof(garbage));
-            if (err == ESP_OK) {
-                Serial.println("[TEST]      Running partition corrupted. Rebooting in 1 second to trigger handoff...");
-                vTaskDelay(pdMS_TO_TICKS(1000));
-                esp_restart();
-            } else {
-                Serial.printf("[TEST]       Failed to corrupt running partition: %s\n", esp_err_to_name(err));
-            }
-        } else {
-            // For non‑running partition, corrupt the first 16 bytes (quick invalidation)
-            Serial.printf("[TEST]       Corrupting non-running partition %s at offset 0x%X\n", labels[target_idx], target->address);
-            err = esp_partition_write(target, 0, garbage, sizeof(garbage));
-            if (err == ESP_OK) {
-                Serial.printf("[TEST]       Corrupted %s\n", labels[target_idx]);
-            } else {
-                Serial.printf("[TEST]       Failed to corrupt %s: %s\n", labels[target_idx], esp_err_to_name(err));
-            }
-        }
-
-        // Slight delay to avoid flooding the serial monitor
-        vTaskDelay(pdMS_TO_TICKS(100));
-    }
-}
-
-#endif
 
 
 // ------------------------------------------------------------------
@@ -513,6 +437,12 @@ private:
     }
 };
 
+
+/*
+This is an example task setup for normal firmware tasks. the classes, Methods described 
+above are under development and shall encompass critical feature usages and their 
+transient redundancy and fault tolerance for time variant curruptions.
+*/
 void baseOperation(void* pvParameters){
     float reading_from_sensor_01 = 12.3423432;
     float reading_from_sensor_02 = 19.3247923;
@@ -601,14 +531,6 @@ void setup() {
     esp_task_wdt_init(&twdt_config);
     
     xTaskCreate(firmwareTask, "firmware_task", 16384, NULL, 5, &firmwareTaskHandle);
-    
-    // testing
-    #ifdef TEST_MODE
-        randomSeed(analogRead(0)); // or use esp_random() for better entropy
-        xTaskCreate(faultInjectionTask, "fault_inject", 4096, NULL, 1, &faultInjectionHandle);
-        Serial.println("[TEST]      Fault injection task started (every 20 seconds)");
-    #endif
-
     // For demo calculation and reads
     xTaskCreate(baseOperation, "basic_operation", 4096, NULL, 4, &basicOperationHandle);
 }
