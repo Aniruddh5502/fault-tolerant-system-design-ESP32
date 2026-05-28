@@ -1,4 +1,4 @@
-#line 1 "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_03\\firmware_03.ino"
+#line 1 "C:\\Users\\Administrator\\Desktop\\code\\tmr-esp32\\firmware_03\\firmware_03.ino"
 #include <Arduino.h>
 #include "esp_ota_ops.h"
 #include "esp_partition.h"
@@ -7,7 +7,7 @@
 #include "freertos/task.h"
 #include "esp_task_wdt.h"
 
-#define TASK_PERIOD_MS      5000    //  Rechecking time gap for currpuption and repair in firmware
+#define TASK_PERIOD_MS      60000   //  Rechecking time gap for currpuption and repair in firmware
 #define WATCHDOG_TIMEOUT_MS 30000   //  Having margin over the max time the repair could take
 #define COPY_CHUNK_SIZE     4096    //  chunk sizes for partition copy and repair
 
@@ -24,25 +24,25 @@ struct OtaSlot {
 // ------------------------------------------------------------------
 // 1. Scan all three OTA partitions using esp_partition_get_sha256()
 // ------------------------------------------------------------------
-#line 26 "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_03\\firmware_03.ino"
+#line 26 "C:\\Users\\Administrator\\Desktop\\code\\tmr-esp32\\firmware_03\\firmware_03.ino"
 bool scanAllOtaPartitions(OtaSlot slots[3]);
-#line 62 "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_03\\firmware_03.ino"
+#line 62 "C:\\Users\\Administrator\\Desktop\\code\\tmr-esp32\\firmware_03\\firmware_03.ino"
 bool repairPartition(const esp_partition_t* dst, const esp_partition_t* src);
-#line 142 "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_03\\firmware_03.ino"
+#line 144 "C:\\Users\\Administrator\\Desktop\\code\\tmr-esp32\\firmware_03\\firmware_03.ino"
 void repairAllInvalidPartitions(OtaSlot slots[3], const esp_partition_t* current);
-#line 176 "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_03\\firmware_03.ino"
+#line 178 "C:\\Users\\Administrator\\Desktop\\code\\tmr-esp32\\firmware_03\\firmware_03.ino"
 const esp_partition_t* getNextValidPartition(OtaSlot slots[3]);
-#line 215 "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_03\\firmware_03.ino"
+#line 217 "C:\\Users\\Administrator\\Desktop\\code\\tmr-esp32\\firmware_03\\firmware_03.ino"
 void firmwareTask(void* pvParameters);
-#line 428 "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_03\\firmware_03.ino"
+#line 533 "C:\\Users\\Administrator\\Desktop\\code\\tmr-esp32\\firmware_03\\firmware_03.ino"
 void baseOperation(void* pvParameters);
-#line 494 "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_03\\firmware_03.ino"
+#line 593 "C:\\Users\\Administrator\\Desktop\\code\\tmr-esp32\\firmware_03\\firmware_03.ino"
 void setup();
-#line 520 "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_03\\firmware_03.ino"
+#line 619 "C:\\Users\\Administrator\\Desktop\\code\\tmr-esp32\\firmware_03\\firmware_03.ino"
 void loop();
-#line 26 "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_03\\firmware_03.ino"
+#line 26 "C:\\Users\\Administrator\\Desktop\\code\\tmr-esp32\\firmware_03\\firmware_03.ino"
 bool scanAllOtaPartitions(OtaSlot slots[3]) {
-    Serial.println("[INFO]       Scaning all partitions.");
+    Serial.println("[INFO]       Scanning all partitions.");
     const esp_partition_subtype_t subtypes[3] = {
         ESP_PARTITION_SUBTYPE_APP_OTA_0,
         ESP_PARTITION_SUBTYPE_APP_OTA_1,
@@ -91,7 +91,9 @@ bool repairPartition(const esp_partition_t* dst, const esp_partition_t* src) {
                   dst->label, src->label, dst->size);
 
     // 1. Erase destination
+    esp_task_wdt_reset();
     esp_err_t err = esp_partition_erase_range(dst, 0, dst->size);
+    esp_task_wdt_reset();
     if (err != ESP_OK) {
         Serial.printf("[ERROR]      Erase failed: %s\n", esp_err_to_name(err));
         return false;
@@ -312,8 +314,8 @@ void firmwareTask(void* pvParameters) {
 - then do another layer of TMR on them to finalize the actual value and return it.
 */
 class var {
-public:
-    // private:
+
+private:
     // 3×3 storage array (9 copies)
     float copies[3][3];
 
@@ -336,7 +338,7 @@ public:
         return arr[1]; // median
     }
 
-// public:
+public:
     // Write a value to all 9 copies
     void write(float value) {
         for (int i = 0; i < 3; i++) {
@@ -359,83 +361,186 @@ public:
 };
 
 class math {
-public:
-    static float add(float a, float b) {
-        float res[3][3];
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                volatile float tmp = a + b;   // volatile prevents constant folding
-                res[i][j] = tmp;
-                asm volatile("" ::: "memory"); // compiler barrier
-            }
-        }
-        return twoStageTMR(res);
-    }
-
-    static float sub(float a, float b) {
-        float res[3][3];
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                volatile float tmp = a - b;
-                res[i][j] = tmp;
-                asm volatile("" ::: "memory");
-            }
-        }
-        return twoStageTMR(res);
-    }
-
-    static float mul(float a, float b) {
-        float res[3][3];
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                volatile float tmp = a * b;
-                res[i][j] = tmp;
-                asm volatile("" ::: "memory");
-            }
-        }
-        return twoStageTMR(res);
-    }
-
-    static float div(float a, float b) {
-        // Avoid division by zero – return NaN if divisor is 0
-        if (b == 0.0f) return NAN;
-        float res[3][3];
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                volatile float tmp = a / b;
-                res[i][j] = tmp;
-                asm volatile("" ::: "memory");
-            }
-        }
-        return twoStageTMR(res);
-    }
-
-private:
-    // Two‑stage TMR voter – identical to the logic in var::read()
-    static float twoStageTMR(float copies[3][3]) {
-        float row_majority[3];
-        for (int i = 0; i < 3; i++) {
-            row_majority[i] = majority(copies[i][0], copies[i][1], copies[i][2]);
-        }
-        return majority(row_majority[0], row_majority[1], row_majority[2]);
-    }
-
-    static float majority(float a, float b, float c) {
-        if (a == b) return a;
-        if (a == c) return a;
-        if (b == c) return b;
-        // No exact match – fallback to median (protects against one outlier)
-        float arr[3] = {a, b, c};
-        for (int i = 0; i < 2; i++) {
-            for (int j = i+1; j < 3; j++) {
-                if (arr[i] > arr[j]) {
-                    float t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    public:
+        static float add(float a, float b) {
+            float res[3][3];
+        
+            // Perform 9 completely independent calculations
+            // Using different expression forms and volatile to prevent optimization
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    // Each copy computed independently with different register allocation
+                    volatile float tmp;
+                    
+                    // Vary calculation order based on indices to create diversity
+                    if ((i + j) % 3 == 0) {
+                        tmp = a + b;           // standard order
+                    } else if ((i + j) % 3 == 1) {
+                        tmp = b + a;           // swapped operands
+                    } else {
+                        tmp = a;               // compute as accumulation
+                        tmp += b;
+                    }
+                    
+                    res[i][j] = tmp;
+                    
+                    // Compiler barrier prevents merging of calculations
+                    asm volatile("" ::: "memory");
                 }
             }
+            
+            return twoStageTMR(res);
         }
-        return arr[1]; // median
-    }
-};
+
+        static float sub(float a, float b) {
+            float res[3][3];
+            
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    volatile float tmp;
+                    
+                    if ((i + j) % 3 == 0) {
+                        tmp = a - b;           // standard order
+                    } else if ((i + j) % 3 == 1) {
+                        tmp = a;               // compute as a + (-b)
+                        tmp += (-b);
+                    } else {
+                        tmp = -(b - a);        // alternative expression
+                    }
+                    
+                    res[i][j] = tmp;
+                    asm volatile("" ::: "memory");
+                }
+            }
+            
+            return twoStageTMR(res);
+        }
+
+        static float mul(float a, float b) {
+            float res[3][3];
+            
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    volatile float tmp;
+                    
+                    if ((i + j) % 3 == 0) {
+                        tmp = a * b;           // standard order
+                    } else if ((i + j) % 3 == 1) {
+                        tmp = b * a;           // swapped operands
+                    } else {
+                        // Compute via repeated addition (slower but independent code path)
+                        tmp = 0.0f;
+                        for (int k = 0; k < (int)b; k++) {
+                            tmp += a;
+                        }
+                        // Handle fractional part
+                        tmp += a * (b - (int)b);
+                    }
+                    
+                    res[i][j] = tmp;
+                    asm volatile("" ::: "memory");
+                }
+            }
+            
+            return twoStageTMR(res);
+        }
+
+        static float div(float a, float b) {
+            // Handle division by zero before creating copies
+            if (b == 0.0f) {
+                return NAN;
+            }
+            
+            float res[3][3];
+            
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    volatile float tmp;
+                    
+                    if ((i + j) % 3 == 0) {
+                        tmp = a / b;           // standard division
+                    } else if ((i + j) % 3 == 1) {
+                        tmp = a * (1.0f / b);  // multiply by reciprocal
+                    } else {
+                        // Newton-Raphson approximation (independent code path)
+                        float inv = 1.0f / b;   // approximate reciprocal
+                        // One refinement step
+                        inv = inv * (2.0f - b * inv);
+                        tmp = a * inv;
+                    }
+                    
+                    res[i][j] = tmp;
+                    asm volatile("" ::: "memory");
+                }
+            }
+            
+            return twoStageTMR(res);
+        }
+
+    private:
+        // Two‑stage TMR voter
+        static float twoStageTMR(float copies[3][3]) {
+            float row_majority[3];
+            
+            for (int i = 0; i < 3; i++) {
+                row_majority[i] = majority(copies[i][0], copies[i][1], copies[i][2]);
+            }
+            
+            return majority(row_majority[0], row_majority[1], row_majority[2]);
+        }
+
+        // Improved majority with NaN/Inf handling
+        static float majority(float a, float b, float c) {
+            // Count valid (non-NaN) values
+            bool a_valid = !isnan(a);
+            bool b_valid = !isnan(b);
+            bool c_valid = !isnan(c);
+            
+            // If two or more are NaN, return NaN
+            int valid_count = (a_valid ? 1 : 0) + (b_valid ? 1 : 0) + (c_valid ? 1 : 0);
+            if (valid_count < 2) {
+                return NAN;
+            }
+            
+            // Handle Inf cases
+            if (isinf(a) || isinf(b) || isinf(c)) {
+                // If two are +Inf, return +Inf
+                int pos_inf = (a == INFINITY ? 1 : 0) + (b == INFINITY ? 1 : 0) + (c == INFINITY ? 1 : 0);
+                if (pos_inf >= 2) return INFINITY;
+                
+                // If two are -Inf, return -Inf
+                int neg_inf = (a == -INFINITY ? 1 : 0) + (b == -INFINITY ? 1 : 0) + (c == -INFINITY ? 1 : 0);
+                if (neg_inf >= 2) return -INFINITY;
+            }
+            
+            // Standard majority for normal floats
+            if (a == b) return a;
+            if (a == c) return a;
+            if (b == c) return b;
+            
+            // No exact majority – use median for robustness
+            float arr[3] = {a, b, c};
+            
+            // Partial sort to find median (handles NaNs by ignoring them)
+            for (int i = 0; i < 2; i++) {
+                for (int j = i + 1; j < 3; j++) {
+                    if (isnan(arr[j])) continue;
+                    if (isnan(arr[i]) || arr[i] > arr[j]) {
+                        float t = arr[i];
+                        arr[i] = arr[j];
+                        arr[j] = t;
+                    }
+                }
+            }
+            
+            // Return median (or first non-NaN if two are NaN)
+            for (int i = 0; i < 3; i++) {
+                if (!isnan(arr[i])) return arr[i];
+            }
+            
+            return NAN; // All NaN (should not reach here)
+        }
+    };
 
 
 /*
@@ -482,12 +587,6 @@ void baseOperation(void* pvParameters){
         }
         Serial.println("\n");
 
-        bool TEST = true;
-        if (TEST){
-            sensor_reading_1.copies[0][0] = 99.999f;
-            sensor_reading_1.copies[1][1] = 29.999f;
-        }
-
         // Math operations TMR
         float sensor_sum    =   math::add(v1, v2);
         float sensor_dif    =   math::sub(v1, v2);
@@ -525,7 +624,7 @@ void setup() {
     // Configure the Task Watchdog
     esp_task_wdt_config_t twdt_config = {
         .timeout_ms = WATCHDOG_TIMEOUT_MS,
-        .idle_core_mask = 0,                                // monitor both cores
+        .idle_core_mask = 0,                                // leaves idle tasks
         .trigger_panic = true,                              // panic on timeout
     };
     esp_task_wdt_init(&twdt_config);

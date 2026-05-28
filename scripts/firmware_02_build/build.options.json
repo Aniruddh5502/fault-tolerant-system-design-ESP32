@@ -1,9 +1,9 @@
 {
   "additionalFiles": "",
   "compiler.optimization_flags": "-Os",
-  "customBuildProperties": "build.partitions=custom,build.flash_partitions=c:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\scripts\\partitions.csv",
+  "customBuildProperties": "build.partitions=custom,build.flash_partitions=c:\\Users\\Administrator\\Desktop\\code\\tmr-esp32\\scripts\\partitions.csv",
   "fqbn": "esp32:esp32:esp32",
   "hardwareFolders": "C:\\Users\\Administrator\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.8,C:\\Users\\Administrator\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.8",
   "otherLibrariesFolders": "C:\\Users\\Administrator\\Documents\\Arduino\\libraries",
-  "sketchLocation": "C:\\Users\\Administrator\\Desktop\\code\\fault-tolerant-system-design\\firmware_02"
+  "sketchLocation": "C:\\Users\\Administrator\\Desktop\\code\\tmr-esp32\\firmware_02"
 }
