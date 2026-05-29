@@ -11,6 +11,9 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.cpp
+*.cpp.d
+*.merged
 *.ipynb
 .Python
 venv/

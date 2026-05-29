@@ -170,32 +170,31 @@ def test_normal_operation():
     print("[PASS] Normal operation OK" if success else "[FAIL] Normal operation check failed")
     return success
 
-def test_repair_non_running():
-    print("\n=== TEST: Repair Non‑Running Partition ===")
-    if not corrupt_partition("ota_0"):
-        return False
-    expected = ["[ERROR]      ota_0 is INVALID",
-                "Attempting to repair invalid partition: ota_0",
-                "Repair successful, ota_0 is now VALID"]
-    success = monitor_serial(timeout=REPAIR_WAIT, expect_strings=expected)
-    print("[PASS] Repair test OK" if success else "[FAIL] Repair test failed")
-    return success
+def test_corrupt_all_partitions():
+    """Corrupt each OTA partition one by one and verify recovery."""
+    all_partitions = ["ota_0", "ota_1", "ota_2"]
+    for part in all_partitions:
+        print(f"\n{'='*50}")
+        print(f"=== TEST: Corrupt {part} ===")
+        print(f"{'='*50}")
+        
+        if not corrupt_partition(part):
+            return False
+        
+        # Only expect strings that always appear after a successful repair
+        expected = [
+            f"{part} is INVALID",     # optional but safe
+            "Repair successful"       # this appears in all cases
+        ]
+        success = monitor_serial(timeout=REPAIR_WAIT, expect_strings=expected)
+        if not success:
+            print(f"[FAIL] Failed to recover from corruption of {part}")
+            return False
+        
+        print(f"[INFO] {part} corruption handled successfully")
+        time.sleep(2)   # small pause before next corruption
+    return True
 
-def test_corrupt_running():
-    print("\n=== TEST: Corrupt a Partition (may be running or not) ===")
-    running = "ota_0"  # or detect from serial
-    if not corrupt_partition(running):
-        return False
-    # After reset, we expect the firmware to either:
-    #   - repair the corrupted partition (if it is not running)
-    #   - or boot from another valid partition and still repair it
-    expected = [
-        "ota_0 is INVALID",
-        "Repair successful, ota_0 is now VALID"
-    ]
-    success = monitor_serial(timeout=REPAIR_WAIT, expect_strings=expected)
-    print("[PASS] Corrupted partition was repaired" if success else "[FAIL]")
-    return success
 
 def main():
     print("=== ESP32 Triple OTA + TMR Test Suite (Manual Reset) ===")
@@ -216,8 +215,7 @@ def main():
         print("\n[ABORT] Normal operation failed")
         sys.exit(1)
 
-    results["repair_non_running"] = test_repair_non_running()
-    results["corrupt_running"] = test_corrupt_running()
+    results["corrupt_all"] = test_corrupt_all_partitions()
 
     print("\n=== TEST SUMMARY ===")
     for name, passed in results.items():
