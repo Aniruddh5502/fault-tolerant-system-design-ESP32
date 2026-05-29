@@ -1,3 +1,14 @@
+/*
+All the prints are for showcasing only, in real operations these things whould be
+replaced by flasgs or code-words for headless system verifications. And this is a
+framework guide, not an complete code for using in critical systems. This code 
+showcases the patterns to be used(excluding the NASA's Jet Propultion Labs *Power of
+Ten* gudelines for safety critical C codes, and SWE-134 guidelines). One can use this 
+as a basic structure for ESP32 specific hardware configs, and the standards applies 
+to all hardware software designs regarless of underlying architecture that has to be 
+mandated.
+*/
+
 #include <Arduino.h>
 #include "esp_ota_ops.h"
 #include "esp_partition.h"
