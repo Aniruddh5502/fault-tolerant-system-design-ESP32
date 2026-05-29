@@ -6,9 +6,10 @@
 
 The system is designed for:
 
-- **Space/aeraval applications** (radiation-induced bit flips)
 - **Industrial IoT** (long unattended operation)
 - **Safety-critical systems** (fail-operational requirements)
+- Target *Space/radiation* prone environments related systems as future plan with standards implementations
+- Not currently recomended for space related operations.
 
 ## Features
 
