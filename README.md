@@ -1,3 +1,9 @@
+# *What needs to be changed for production* this is a *to-do*
+- Remove malloc (use static buffer)
+- Replace C++ templates with pure C for NASA compliance
+- Add CRC32 in addition to SHA256 for faster validation
+- Implement rollback counters for antibricking
+
 # ESP32 Triple OTA with TMR Fault Tolerance
 
 *A robust embedded firmware system for ESP32 that implements **three-way OTA partition management** with automatic corruption detection, self-repair, and **two-layer Triple Modular Redundancy (TMR)** for critical data and arithmetic operations.*
